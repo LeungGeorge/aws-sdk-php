@@ -16,11 +16,12 @@ use Aws\Result;
 use Aws\WrappedHttpHandler;
 use GuzzleHttp\Promise\RejectedPromise;
 use Psr\Http\Message\RequestInterface;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Aws\ClientResolver
  */
-class ClientResolverTest extends \PHPUnit_Framework_TestCase
+class ClientResolverTest extends TestCase
 {
     use UsesServiceTrait;
 
@@ -198,7 +199,7 @@ class ClientResolverTest extends \PHPUnit_Framework_TestCase
             ]
         ]);
         $res = $r->resolve([], new HandlerList());
-        $this->assertTrue(is_callable($callableFunction));
+        $this->assertInternalType('callable', $callableFunction);
         $this->assertEquals(
             '\Aws\test\ClientResolverTest::checkCallable',
             $res['foo']
@@ -544,7 +545,7 @@ EOT;
             'debug'       => ['logfn' => function ($value) use (&$str) { $str .= $value; }]
         ], $list);
         $value = $this->readAttribute($list, 'interposeFn');
-        $this->assertTrue(is_callable($value));
+        $this->assertInternalType('callable', $value);
     }
 
     public function testAppliesUserAgent()
@@ -580,7 +581,12 @@ EOT;
 
         $request->expects($this->once())
             ->method('withHeader')
-            ->with('User-Agent', 'aws-sdk-php/' . Sdk::VERSION . ' MockBuilder');
+            ->with(
+                'User-Agent',
+                new \PHPUnit_Framework_Constraint_PCREMatch(
+                    '/aws-sdk-php\/' . Sdk::VERSION . '.* MockBuilder/'
+                )
+            );
 
         $args = [];
         $list = new HandlerList(function () {});
@@ -779,9 +785,9 @@ EOT;
         ];
         $list = new HandlerList;
 
-        $this->assertSame(0, count($list));
+        $this->assertCount(0, $list);
         ClientResolver::_apply_idempotency_auto_fill($value, $args, $list);
-        $this->assertSame($shouldAddIdempotencyMiddleware ? 1 : 0, count($list));
+        $this->assertCount($shouldAddIdempotencyMiddleware ? 1 : 0, $list);
     }
 
     public function idempotencyAutoFillProvider()
